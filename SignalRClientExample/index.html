@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="signalr.min.js"></script>
+    <script src="jquery.min.js"></script>
+    <script>
+        $(document).ready(()=>{
+            const connection = new signalR.HubConnectionBuilder()
+            .withUrl("https://localhost:7246/myhub")
+            .withAutomaticReconnect()
+            .build();
+
+            //Bağlantı hiç kurulamadığı durumlarda bu fonksiyon kullanılır
+            async function start() {
+                try{
+                    await connection.start();
+                }
+                catch(error){
+                    setTimeout(()=>start(),2000);
+                }
+            }
+            start();
+            // connection.start();            
+            function animation(){
+                durum.fadeIn(2000,() => setTimeout(()=>
+                {
+                    durum.fadeOut(2000)
+                },2000))
+            }
+
+            $('#btnGonder').click(()=>{
+                let message = $('#txtMessage').val();
+                connection.invoke("SendMessageAsync",message).catch(error => console.log(`Mesaj gönderilirken hata oluştu : ${error}`));
+            });
+
+            connection.on("receiveMessage", message => {
+                $("#mesajlar").append(`${message} ${new Date().toISOString()} <br>`);
+            });
+
+            connection.on("clients", clientsData => {
+                var clientHtml = "";
+                $.each(clientsData,(index,item) => {
+                    clientHtml += `<li>${item}</li>`;
+                });
+                $("#clients").html(clientHtml);
+            });
+
+            const durum = $("#durum");
+            connection.on("userJoined", connectionId => {
+                durum.html(`${connectionId} bağlandi`)
+                durum.css("background-color","green")
+                durum.css("color","white")
+                animation();
+            });
+
+            connection.on("userLeft", message => {
+                durum.html(`${connectionId} ayrildi`)
+                durum.css("background-color","red")
+                durum.css("color","white")
+                animation();
+            });
+            connection.onreconnecting(error => {
+                durum.css("background-color","blue")
+                durum.css("color","white")
+                durum.html("Bağlantı kuruluyor...")
+                animation();
+            })
+
+            connection.onreconnected(error => {
+                durum.css("background-color","green")
+                durum.css("color","white")
+                durum.html("Bağlantı kuruldu!")
+                animation();
+            })
+
+            connection.onclose(error => {
+                durum.css("background-color","red")
+                durum.css("color","white")
+                durum.html("Bağlanılamadı!")
+                animation();
+            })
+        });
+    </script>
+</head>
+<body>
+    <input type="text" id="txtMessage">
+    <button id="btnGonder">Gönder</button>
+    <div id="durum"></div>
+    <div id="mesajlar"></div>
+    <div>
+        <ul id="clients">
+
+        </ul>
+    </div>
+</body>
+</html>
