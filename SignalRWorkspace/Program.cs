@@ -1,3 +1,4 @@
+using SignalRWorkspace.Business;
 using SignalRWorkspace.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,10 +10,11 @@ builder.Services.AddCors(options =>  options.AddDefaultPolicy(policy =>
     .SetIsOriginAllowed(origin => true);
 }));
 builder.Services.AddSignalR();
-
+builder.Services.AddTransient<MyBusiness>();
+builder.Services.AddControllers();
 var app = builder.Build();
 
 app.UseCors();
-app.MapHub<MyHub>("/myhub");   
-app.MapGet("/", () => "Hello World!");
+app.MapHub<MyHub>("/myhub"); 
+app.MapControllers();
 app.Run();
